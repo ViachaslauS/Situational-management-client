@@ -14,6 +14,7 @@ SOURCES += \
     addtablewindow.cpp \
     adduserwindow.cpp \
     dbwindow.cpp \
+    deleterowwindow.cpp \
     disconnectwindow.cpp \
     filelogger.cpp \
     ipeditwindow.cpp \
@@ -26,6 +27,7 @@ HEADERS += \
     addtablewindow.h \
     adduserwindow.h \
     dbwindow.h \
+    deleterowwindow.h \
     disconnectwindow.h \
     filelogger.h \
     ipeditwindow.h \
@@ -36,6 +38,7 @@ FORMS += \
     addtablewindow.ui \
     adduserwindow.ui \
     dbwindow.ui \
+    deleterowwindow.ui \
     disconnectwindow.ui \
     ipeditwindow.ui \
     mainwindow.ui

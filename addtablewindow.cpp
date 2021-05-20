@@ -68,7 +68,7 @@ QVector<QString> AddTableWindow::buildedMessage()
     {
         return vec;
     }
-    vec.push_back(ui->TableName->text());
+    vec.push_back(ui->TableName->text().toUtf8());
     for(int i = 0;i<columnsNames.size();i++)
     {
         vec.push_back(columnsNames[i]->text());

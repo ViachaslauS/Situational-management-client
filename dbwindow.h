@@ -22,6 +22,7 @@
 #include "disconnectwindow.h"
 #include "filelogger.h"
 #include "addtablewindow.h"
+#include "deleterowwindow.h"
 
 #define _V_C_TABLE "voinskaya chast"
 
@@ -62,12 +63,13 @@ private:
         addingUser,
         createTable,
         editTable,
-        deleteTable
+        deleteTable,
+        deleteRow
     };
     enum UactDefining{
         returnToMainMenu,
         updateTables,
-        deleteRow
+
     };
 
     QMap<AactDefining,QAction*> Aactions;
@@ -78,8 +80,10 @@ private:
     QAction* updateAction;
 
     QTableView* currentTable;
+
+    int currentTabTable = 0;
 private:
-    void configureTabTable();
+    void configureTabTable(uint setCurrent = 0);
     void configureUIAtLevel();
     void configAdminUI();
     void configUserUI();
@@ -94,11 +98,13 @@ private slots:
     void slotOnAddStrButtonClicked();
     void slotAddTable();
     void slotEditCurrentTable();
-    void slotOnUpdateButtonClicked();
+    void slotUpdate();
     void slotDeleteTable();
-    void slotDeletingResult(QVector<QString>);
-    void slotAcceptDeleting();
+    void slotDeletingTableResult(QVector<QString>);
+    void slotAcceptDeletingTable();
     void slotDeleteRow();
+    void slotAcceptDeletingRow(int);
+
 signals:
     void returnBackSignal();
 };

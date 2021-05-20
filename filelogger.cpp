@@ -25,5 +25,6 @@ void FileLogger::log(QString message)
         QDate date;
         QTextStream stream(file);
         stream << '['+ date.currentDate().toString("dd.MM.yyyy") + ' ' + time.currentTime().toString() +"]: " + message + '\n';
+        qDebug() << message;
     }
 }

@@ -107,7 +107,6 @@ void TcpClient::slotError(QAbstractSocket::SocketError err)
                 "The connection was refused." :
                 QString(pTcpSocket->errorString())
                 );
-    qDebug() << strError;
     FileLogger::log(strError);
     emit connectionLost();
 }
@@ -159,7 +158,7 @@ void TcpClient::slotSendToServer(int code,QVector<QString> args)
 }
 void TcpClient::slotConnected()
 {
-    qDebug()<<"Connected.";
+    FileLogger::log("Connected socket to server");
 }
 
 void TcpClient::translateMessage(int code, QVector<char *> data)
@@ -171,7 +170,7 @@ void TcpClient::translateMessage(int code, QVector<char *> data)
     }
     //qDebug() << "after formatting new data is:";
     //qDebug() << formattedData;
-    qDebug() << "Code is " << code;
+    qDebug() << "Code from server about operation is " << code;
     //qDebug() << "decoder";
     switch(code)
     {
@@ -225,7 +224,6 @@ bool TcpClient::connectToServer(QString ip, QString port)
 }
 void TcpClient::answerReceiver(QVector<QString> data)
 {
-    qDebug() << data;
     FileLogger::log(data[1]);
 }
 

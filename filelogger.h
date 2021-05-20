@@ -6,6 +6,7 @@
 #include <QTextStream>
 #include <QApplication>
 #include <QErrorMessage>
+#include <QDebug>
 
 /**
  * @brief Класс будет работать только с C++17

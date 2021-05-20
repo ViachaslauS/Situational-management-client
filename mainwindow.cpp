@@ -5,6 +5,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
+
     //Настройка UI
     ui->setupUi(this);
     //setupBckgrd();

@@ -9,7 +9,7 @@ DBWindow::DBWindow(QWidget *parent) :
     setWindowTitle("Рабочее окно");
     updateAction = new QAction(QIcon("C:/Users/silen/Desktop/QtProject/Icons/updateIcon.png"),"Обновить");
     updateAction->setShortcut(QKeySequence("CTRL+R"));
-    connect(updateAction,&QAction::triggered,this, &DBWindow::configureTabTable);
+    connect(updateAction,&QAction::triggered,this, &DBWindow::slotUpdate);
     ui->toolBar->addAction(updateAction);
 
 }
@@ -27,7 +27,7 @@ bool DBWindow::configureDatabase(QVector<QString> data)
     tcpClient = tcpClient->Instance();
     //qDebug() << "IP from inst is " << tcpClient->getIP();
     connect(tcpClient,&TcpClient::connectionLost,this,&DBWindow::slotDisconnect);
-    connect(tcpClient,&TcpClient::deletingResult,this,&DBWindow::slotDeletingResult);
+    connect(tcpClient,&TcpClient::deletingResult,this,&DBWindow::slotDeletingTableResult);
     configureUIAtLevel();
     //qDebug() << "DB form was configured!";
     database = QSqlDatabase::addDatabase("QMYSQL");
@@ -59,7 +59,7 @@ bool DBWindow::configureDatabase(QVector<QString> data)
     return true;
 }
 
-void DBWindow::configureTabTable()
+void DBWindow::configureTabTable(uint setCurrent)
 {
     QStringList tablesList = database.tables(QSql::TableType::Tables);
     for(auto a: tabWidgets)
@@ -68,7 +68,7 @@ void DBWindow::configureTabTable()
         delete a;
     }
     tabWidgets.clear();
-    tabWidgets.squeeze();           // Сомнительно
+    tabWidgets.squeeze();
 
     ui->tabTablesWidget->clear();
 
@@ -92,11 +92,23 @@ void DBWindow::configureTabTable()
         tabWidgets.last()->setSizePolicy(policy);
         //childView->setSizePolicy(policy);
         //childView->setGeometry(0,0,800,600);
+
         childView->setModel(model);
+        //childView->setModel(NULL);
+        //childView->setSelectionModel(new QItemSelectionModel());                //Попытка починки удаления строки
+        //childView->setSelectionMode(QAbstractItemView::SelectionMode::SingleSelection);
+
         //childView->setItemDelegate(new QSqlRelationalDelegate(childView));
         childView->show();
         ui->tabTablesWidget->addTab(tabWidgets.last(),tablesList[i]);
         tabWidgets.last()->setToolTip(QString::number(i));
+    }
+    if(setCurrent !=0 )
+    {
+        if((uint)ui->tabTablesWidget->count()>setCurrent)
+        {
+            ui->tabTablesWidget->setCurrentIndex(setCurrent);
+        }
     }
     currentTable = (QTableView*)ui->tabTablesWidget->currentWidget();
     makeRelationsForTables();
@@ -116,9 +128,11 @@ void DBWindow::on_tabTablesWidget_currentChanged(int index)
 {
 //    query->exec("SHOW VARIABLES LIKE 'char%'");
 //    query->exec("SHOW VARIABLES LIKE 'coll%'");
-    model->setTable(ui->tabTablesWidget->tabBar()->tabText(index));
+    model->setTable(ui->tabTablesWidget->tabBar()->tabText(index).toUtf8());
     model->select();
+
     currentTable = (QTableView*)ui->tabTablesWidget->currentWidget();
+
 }
 
 void DBWindow::configureUIAtLevel()
@@ -139,19 +153,25 @@ void DBWindow::configAdminUI()
     ui->menubar->addMenu(admMenus);
     Aactions[addingUser] = new QAction(QIcon("C:/Users/silen/Desktop/QtProject/Icons/add_User.png"),"Добавление пользователя");
     Aactions[createTable] = new QAction(QIcon("C:/Users/silen/Desktop/QtProject/Icons/add_Table.png"),"Добавление таблицы");
-    Aactions[editTable] = new QAction(QIcon("C:/Users/silen/Desktop/QtProject/Icons/edit_Table.png"),"Изменение текущей таблицы");
+    //Aactions[editTable] = new QAction(QIcon("C:/Users/silen/Desktop/QtProject/Icons/edit_Table.png"),"Изменение текущей таблицы");
+    Aactions[deleteRow] = new QAction(QIcon("C:/Users/silen/Desktop/QtProject/Icons/deleteRow.png"),"Удалить строку");
     Aactions[deleteTable] = new QAction(QIcon("C:/Users/silen/Desktop/QtProject/Icons/delete--v2.png"),"Удаление текущей таблицы");
 
-    ui->toolBar->addAction(Aactions[addingUser]);
-    ui->toolBar->addAction(Aactions[createTable]);
-    ui->toolBar->addAction(Aactions[editTable]);
-    ui->toolBar->addAction(Aactions[deleteTable]);
+    Aactions[deleteTable]->setShortcut(QKeySequence("SHIFT+DELETE"));
+    Aactions[deleteRow]->setShortcut(QKeySequence("DELETE"));
+    ui->toolBar->addActions(Aactions.values());
+//    ui->toolBar->addAction(Aactions[addingUser]);
+//    ui->toolBar->addAction(Aactions[createTable]);
+//    ui->toolBar->addAction(Aactions[editTable]);
+//    ui->toolBar->addAction(Aactions[deleteTable]);
     //admMenus->addAction(actions[addingUser]);
 
     connect(Aactions[addingUser],SIGNAL(triggered()),SLOT(slotAddNewUser()));
     connect(Aactions[createTable],SIGNAL(triggered()),SLOT(slotAddTable()));
-    connect(Aactions[editTable],SIGNAL(triggered()),SLOT(slotEditCurrentTable()));
+    //connect(Aactions[editTable],SIGNAL(triggered()),SLOT(slotEditCurrentTable()));
     connect(Aactions[deleteTable],SIGNAL(triggered()),SLOT(slotDeleteTable()));
+    connect(Aactions[deleteRow], &QAction::triggered,this, &DBWindow::slotDeleteRow);
+
     admMenus->addActions(Aactions.values());
 }
 
@@ -162,14 +182,14 @@ void DBWindow::configUserUI()
     ui->menubar->addMenu(userMenus);
     Uactions[returnToMainMenu] = new QAction(QIcon("C:/Users/silen/Desktop/QtProject/Icons/exit.png"),"Вернуться в главное меню");
     Uactions[updateTables] = updateAction;
-    Uactions[deleteRow] = new QAction(QIcon("C:/Users/silen/Desktop/QtProject/Icons/deleteRow.png"),"Удалить строку");
+
+
 
     ui->toolBar->addActions(Uactions.values());
     //ui->toolBar->addAction(Uactions[returnToMainMenu]);
 
 
     connect(Uactions[returnToMainMenu],&QAction::triggered,this,&DBWindow::slotDisconnect);
-    connect(Uactions[deleteRow], &QAction::triggered,this, &DBWindow::slotDeleteRow);
 
     userMenus->addActions(Uactions.values());
 }
@@ -236,27 +256,29 @@ void DBWindow::slotEditCurrentTable()
     qDebug() << "edit table";
 }
 
-void DBWindow::slotOnUpdateButtonClicked()
+void DBWindow::slotUpdate()
 {
-    tabWidgets[ui->tabTablesWidget->currentIndex()]->update();
+    configureTabTable(ui->tabTablesWidget->currentIndex());
 }
 
 void DBWindow::slotDeleteTable()
 {
     QString title = ui->tabTablesWidget->tabBar()->tabText(ui->tabTablesWidget->currentIndex());
     QMessageBox *msg = new QMessageBox(QMessageBox::Question, "Удаление таблицы", "Вы уверены что хотите удалить таблицу " + title + "?", QMessageBox::Yes| QMessageBox::No, this);
-    connect(msg, &QMessageBox::accepted,this,&DBWindow::slotAcceptDeleting);
+    msg->setButtonText(QMessageBox::Yes,"Да");
+    msg->setButtonText(QMessageBox::No,"Нет");
+    connect(msg, &QMessageBox::accepted,this,&DBWindow::slotAcceptDeletingTable);
     msg->show();
     //slotAcceptDeleting();
 }
-void DBWindow::slotAcceptDeleting()
+void DBWindow::slotAcceptDeletingTable()
 {
     QVector<QString> message;
     QString title = ui->tabTablesWidget->tabBar()->tabText(ui->tabTablesWidget->currentIndex());
     message.push_back(title);
     emit tcpClient->sendMessageSignal(4,message);
 }
-void DBWindow::slotDeletingResult(QVector<QString> data)
+void DBWindow::slotDeletingTableResult(QVector<QString> data)
 {
     switch (data[0].toInt()) {
     case 0: QMessageBox::warning(this,"Удаление таблицы","Таблица не удалена.\n" + data[1]); FileLogger::log(data[1]); break;
@@ -265,47 +287,22 @@ void DBWindow::slotDeletingResult(QVector<QString> data)
 }
 void DBWindow::slotDeleteRow()
 {
-//    QModelIndex index;
-//    QTableView* tableView = currentTable;
-//    QItemSelectionModel* selectModel = (tableView)->selectionModel();
-//    QModelIndexList indexes = selectModel->selectedIndexes();
-//    int row;
-//    foreach( index, indexes )
-//    {
-//        row = index.row();
-//        QString tmp = tableView->model()->data(tableView->model()->index(row,0)).toString();
-
-//        if ( row != -1 )
-//        {
-//            qDebug() << row; //делаем что-то
-//        }
-//        break;
-//    }
-    if(currentTable->selectionModel() == nullptr)
+    if(model->rowCount() == 0)
     {
-        qDebug() << "table model is null";
+        QMessageBox::warning(this,"Удаление строки","Отсутствуют строки для удаления.");
     }
     else
     {
-         qDebug() << "not null";
-            QModelIndex index;
-            QTableView* tableView = currentTable;
-            QItemSelectionModel* selectModel = (tableView)->selectionModel();
-            QModelIndexList indexes = selectModel->selectedIndexes();
-            int row;
-            foreach( index, indexes )
-            {
-                row = index.row();
-                QString tmp = tableView->model()->data(tableView->model()->index(row,0)).toString();
-
-                if ( row != -1 )
-                {
-                    qDebug() << row; //делаем что-то
-                }
-                break;
-            }
-
+        DeleteRowWindow delWindow;
+        delWindow.setMaximumRows(model->rowCount());
+        connect(&delWindow,&DeleteRowWindow::rowToDelete,this,&DBWindow::slotAcceptDeletingRow);
+        delWindow.setModal(true);
+        delWindow.exec();
     }
+}
+void DBWindow::slotAcceptDeletingRow(int num)
+{
+    model->removeRow(num-1);
     model->select();
-    configureTabTable();
+    configureTabTable(ui->tabTablesWidget->currentIndex());
 }
